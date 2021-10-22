@@ -2,7 +2,7 @@ const users = []
 
 const addUser = ({ id, username, room }) => {
     // Clean the data
-    username = username.trim().toLowerCase()
+    username = username.trim()
     room = room.trim().toLowerCase()
 
     // Validate the data
@@ -19,15 +19,14 @@ const addUser = ({ id, username, room }) => {
 
     // Validate username
     if (existingUser) {
-        return {
-            error: 'Username is in use!'
-        }
+        existingUser.id = id;
+        existingUser.connected = true;
+        return { user: existingUser };
+    } else {
+        const user = { id, username, room, connected: true };
+        users.push(user);
+        return { user };
     }
-
-    // Store user
-    const user = { id, username, room }
-    users.push(user)
-    return { user }
 }
 
 const removeUser = (id) => {
@@ -35,6 +34,23 @@ const removeUser = (id) => {
 
     if (index !== -1) {
         return users.splice(index, 1)[0]
+    }
+}
+
+const online = (id) => {
+    const index = users.findIndex((user) => user.id === id)
+
+    if (index !== -1) {
+        users[index].connected = true
+    }
+}
+
+const offline = (id) => {
+    const index = users.findIndex((user) => user.id === id)
+
+    if (index !== -1) {
+        users[index].connected = false
+        return users[index]
     }
 }
 
@@ -54,6 +70,8 @@ const getUsersInRoom = (room) => {
 module.exports = {
     addUser,
     removeUser,
+    online,
+    offline,
     getUser,
     getUsersInRoom,
     getUserByUsername

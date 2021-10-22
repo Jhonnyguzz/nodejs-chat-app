@@ -3,8 +3,9 @@ const http = require('http')
 const express = require('express')
 const socketio = require('socket.io')
 const Filter = require('bad-words')
-const { generateMessage, generateLocationMessage, generatePrivateMessage } = require('./utils/messages')
-const { addUser, removeUser, getUser, getUsersInRoom, getUserByUsername } = require('./utils/users')
+const { addMessage, getPendingMessagesForUsername, 
+    generateMessage, generateLocationMessage, generatePrivateMessage, findMessagesForUsername } = require('./utils/messages')
+const { addUser, removeUser, offline, getUser, getUsersInRoom, getUserByUsername } = require('./utils/users')
 
 const app = express()
 const server = http.createServer(app)
@@ -34,6 +35,9 @@ io.on('connection', (socket) => {
             users: getUsersInRoom(user.room)
         })
 
+        let historyMessages = findMessagesForUsername(getUser(socket.id).username);
+        historyMessages.forEach(msg => io.to(socket.id).emit('privateMessage', generatePrivateMessage(msg.from, msg.text)));
+
         callback()
     })
 
@@ -50,19 +54,24 @@ io.on('connection', (socket) => {
     })
 
     socket.on('privateMessage', (message, callback) => {
-        const user = getUser(socket.id)
+        const user = getUser(socket.id);
         
         let text = message.text;
-        let privateUser = getUserByUsername(message.username)
+        let privateUser = getUserByUsername(message.to)
 
-        if(privateUser !== undefined) {
+        if(privateUser !== undefined && privateUser.connected) {
             let userid = privateUser.id;
             io.to(userid).emit('privateMessage', generatePrivateMessage(user.username, text));
             io.to(socket.id).emit('privateMessage', generatePrivateMessage(user.username, text));
+            addMessage(message);
             callback();
-        }else {
-            console.log("El usuario no existe");
-            callback({error:"El usuario no existe"});
+        } else {
+            console.log("El usuario no existe o esta desconectado");
+            if(privateUser !== undefined && !privateUser.connected) {
+                addMessage(message);
+                callback();
+            } else
+                callback({error:"El usuario no existe"});
         }
     })
 
@@ -73,7 +82,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('disconnect', () => {
-        const user = removeUser(socket.id)
+        const user = offline(socket.id)
 
         if (user) {
             io.to(user.room).emit('message', generateMessage('Admin', `${user.username} has left!`))

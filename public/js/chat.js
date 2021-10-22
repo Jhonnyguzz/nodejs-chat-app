@@ -95,7 +95,7 @@ $messageForm.addEventListener('submit', (e) => {
         arrayMessage.shift();
         let text = arrayMessage.join(" ")
 
-        let theMessage = {text, username: privateUsername}
+        let theMessage = {text, to: privateUsername, from: username}
 
         socket.emit('privateMessage', theMessage, (error) => {
             $messageFormButton.removeAttribute('disabled')
