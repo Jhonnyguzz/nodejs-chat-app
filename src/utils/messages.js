@@ -36,11 +36,22 @@ const findMessagesForUsername = (username) => {
     return pendingMessages.filter(user => user.to === username);
 };
 
+const findMessagesForMeFromSomeone = (me, someone) => {
+    return pendingMessages.filter(user => (user.to === me && user.from === someone) 
+        || (user.to === someone && user.from === me));
+};
+
+const getAllMessages = () => {
+    return pendingMessages;
+};
+
 module.exports = {
     addMessage,
     getPendingMessagesForUsername,
     generateMessage,
     generateLocationMessage,
     generatePrivateMessage,
-    findMessagesForUsername
+    findMessagesForUsername,
+    findMessagesForMeFromSomeone,
+    getAllMessages
 };

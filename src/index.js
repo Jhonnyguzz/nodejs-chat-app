@@ -1,20 +1,30 @@
 const path = require('path')
 const http = require('http')
 const express = require('express')
-const socketio = require('socket.io')
+const cors = require('cors')
 const Filter = require('bad-words')
-const { addMessage, getPendingMessagesForUsername, 
+const { addMessage, getPendingMessagesForUsername, findMessagesForMeFromSomeone, getAllMessages,
     generateMessage, generateLocationMessage, generatePrivateMessage, findMessagesForUsername } = require('./utils/messages')
 const { addUser, removeUser, offline, getUser, getUsersInRoom, getUserByUsername } = require('./utils/users')
 
-const app = express()
-const server = http.createServer(app)
-const io = socketio(server)
+const app = express();
+app.use(cors())
+
+const server = http.createServer(app);
+const io = require("socket.io")(server, {
+  pingInterval: 10000,
+  pingTimeout: 5000,
+  cors: { origin: '*', methods: ["GET", "POST"] },
+});
 
 const port = process.env.PORT || 3000
 const publicDirectoryPath = path.join(__dirname, '../public')
 
 app.use(express.static(publicDirectoryPath))
+
+app.get('/messages', (req, res) => {
+    res.send(findMessagesForMeFromSomeone(req.query.me, req.query.someone));
+})
 
 io.on('connection', (socket) => {
     console.log('New WebSocket connection')
@@ -35,8 +45,8 @@ io.on('connection', (socket) => {
             users: getUsersInRoom(user.room)
         })
 
-        let historyMessages = findMessagesForUsername(getUser(socket.id).username);
-        historyMessages.forEach(msg => io.to(socket.id).emit('privateMessage', generatePrivateMessage(msg.from, msg.text)));
+        //let historyMessages = findMessagesForUsername(getUser(socket.id).username);
+        //historyMessages.forEach(msg => io.to(socket.id).emit('privateMessage', generatePrivateMessage(msg.from, msg.text)));
 
         callback()
     })
@@ -62,7 +72,7 @@ io.on('connection', (socket) => {
         if(privateUser !== undefined && privateUser.connected) {
             let userid = privateUser.id;
             io.to(userid).emit('privateMessage', generatePrivateMessage(user.username, text));
-            io.to(socket.id).emit('privateMessage', generatePrivateMessage(user.username, text));
+            //io.to(socket.id).emit('privateMessage', generatePrivateMessage(user.username, text));
             addMessage(message);
             callback();
         } else {
@@ -73,6 +83,7 @@ io.on('connection', (socket) => {
             } else
                 callback({error:"El usuario no existe"});
         }
+
     })
 
     socket.on('sendLocation', (coords, callback) => {

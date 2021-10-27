@@ -105,7 +105,15 @@ $messageForm.addEventListener('submit', (e) => {
             if (error) {
                 return console.log(error)
             }
-    
+
+            console.log(message)
+            const html = Mustache.render(messagePrivateTemplate, {
+                username: theMessage.to,
+                message: theMessage.text,
+                createdAt: moment(theMessage.createdAt).format('h:mm a')
+            })
+            $messages.insertAdjacentHTML('beforeend', html)
+            autoscroll()
             console.log('Message delivered!')
         })
         
