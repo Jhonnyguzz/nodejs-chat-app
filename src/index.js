@@ -1,11 +1,11 @@
-const path = require('path')
-const http = require('http')
-const express = require('express')
-const cors = require('cors')
-const Filter = require('bad-words')
+const path = require('path');
+const http = require('http');
+const express = require('express');
+const cors = require('cors');
+const Filter = require('bad-words');
 const { addMessage, getPendingMessagesForUsername, findMessagesForMeFromSomeone, getAllMessages,
-    generateMessage, generateLocationMessage, generatePrivateMessage, findMessagesForUsername } = require('./utils/messages')
-const { addUser, removeUser, offline, getUser, getUsersInRoom, getUserByUsername } = require('./utils/users')
+    generateMessage, generateLocationMessage, generatePrivateMessage, findMessagesForUsername, getFromDb } = require('./utils/messages');
+const { addUser, removeUser, offline, getUser, getUsersInRoom, getUserByUsername } = require('./utils/users');
 
 const app = express();
 app.use(cors())
@@ -22,8 +22,12 @@ const publicDirectoryPath = path.join(__dirname, '../public')
 
 app.use(express.static(publicDirectoryPath))
 
-app.get('/messages', (req, res) => {
-    res.send(findMessagesForMeFromSomeone(req.query.me, req.query.someone));
+app.get('/test', async (req, res) => {
+    res.send(await getFromDb());
+})
+
+app.get('/messages', async (req, res) => {
+    res.send(await findMessagesForMeFromSomeone(req.query.me, req.query.someone));
 })
 
 io.on('connection', (socket) => {
